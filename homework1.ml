@@ -5,7 +5,7 @@
    * n.  It should return a pair (tuple of two) with the (less, more) lists.
     *)
 (* val split_n : int list -> int -> (int list * int list) *)
-let split_n list n =
+let split_n (list : int list) n =
   let rec help_split l1 l2 l n =
     match l with [] -> (l1,l2) |
     (hd::tl) ->
@@ -189,12 +189,20 @@ type bool_ast =
   | And of bool_ast * bool_ast
   | Or of bool_ast * bool_ast
   | Not of bool_ast
-
+  | Implies of bool_ast * bool_ast  (* A -> B *)
 (*
  * C.1: Write an OCaml function that takes a syntax tree and evaluates
  * it to true or false.
  *)
 (* val eval_ast : bool_ast -> bool *)
+let rec eval_ast ast_expr =
+  match ast_expr with
+    True -> true
+  | False -> false
+  | And (e1, e2) -> eval_ast e1 && eval_ast e2
+  | Or (e1, e2) -> eval_ast e1 || eval_ast e2
+  | Not e -> not (eval_ast e)
+  | Implies (e1,e2) -> not (eval_ast e1) || eval_ast e2
 
 (*
  * C.2: Write an OCaml function that takes a syntax tree and checks if
@@ -202,12 +210,32 @@ type bool_ast =
  * B).
  *)
 (* val has_implication : bool_ast -> bool *)
+let rec has_implication ast_expr =
+  match ast_expr with
+    True -> false
+  | False -> false
+  | And (e1, e2) -> has_implication e1 || has_implication e2
+  | Or (e1, e2) -> has_implication e1 || has_implication e2
+  | Not e -> has_implication e
+  | Implies (_,_) -> true (* return false unless implies is found *)
+
 
 (*
  * C.3: Write an OCaml function that takes a syntax tree and
  * simplifies all double negations, returning a simpler syntax tree.
  *)
 (* val remove_notnot : bool_ast -> bool_ast *)
+let rec remove_notnot (ast_expr : bool_ast) =
+  match ast_expr with
+    True -> True
+  | False -> False
+  | And (e1, e2) -> And (remove_notnot e1, remove_notnot e2)
+  | Or (e1, e2) -> Or (remove_notnot e1, remove_notnot e2)
+  | Not (Not e) -> remove_notnot e
+  | Not e -> Not (remove_notnot e)
+  | Implies (e1,e2) -> Implies (remove_notnot e1, remove_notnot e2)
+
+
 
 (*
  * C.4: Write an OCaml function that takes another function and a
@@ -215,12 +243,32 @@ type bool_ast =
  * first argument returns true.
  *)
 (* val select_subtrees : (bool_ast -> bool) -> bool_ast -> bool_ast list *)
-
+let rec select_subtrees func (ast_expr : bool_ast) =
+  let current_matches =
+    if (func ast_expr) = true then [ast_expr] else []
+  in (* current_matches is a list returned by func *)
+  match ast_expr with
+    True -> current_matches
+  | False -> current_matches
+  | And (e1, e2) -> current_matches @ (select_subtrees func e1) @ (select_subtrees func e2) (* @ concatenates lists *)
+  | Or (e1, e2) -> current_matches @ (select_subtrees func e1) @ (select_subtrees func e2)
+  | Not e -> current_matches @ (select_subtrees func e)
+  | Implies (e1, e2) -> current_matches @ (select_subtrees func e1) @ (select_subtrees func e2)
+    
 (*
  * C.2: Write an OCaml function that takes a syntax tree and checks if
  * it contains any identities (an identity on A is the term "A and A").
  *)
 (* val has_identity: bool_ast -> bool *)
+let rec has_identity (ast_expr : bool_ast) =
+  match ast_expr with
+    True -> false
+  | False -> false
+  | And (e1, e2) -> if e1 = e2 then true else has_identity e1 || has_identity e2
+  | Or (e1, e2) -> has_identity e1 || has_identity e2
+  | Not e -> has_identity e
+  | Implies (e1, e2) -> has_identity e1 || has_identity e2
+
 
 (*
  * C.3: Write an OCaml function that takes a syntax tree and
@@ -229,4 +277,13 @@ type bool_ast =
  *)
 (* val rewrite_demorgan: bool_ast -> bool_ast *)
 
-
+let rec rewrite_demorgan (ast_expr : bool_ast) =
+  match ast_expr with
+    True -> True
+  | False -> False
+  | And (e1, e2) -> And (rewrite_demorgan e1, rewrite_demorgan e2)
+  | Or (e1, e2) -> Or (rewrite_demorgan e1, rewrite_demorgan e2)
+  | Not (And (e1, e2)) ->  (* Apply De Morgan's Law *)
+      Or (Not (rewrite_demorgan e1), Not (rewrite_demorgan e2))
+  | Not e -> Not (rewrite_demorgan e)
+  | Implies (e1, e2) -> Implies (rewrite_demorgan e1, rewrite_demorgan e2)
