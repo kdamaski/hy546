@@ -1,6 +1,5 @@
-  open Ast
+open Ast
  
-
 (*
  * A1. Write a function that computes the free variables of an AST
  * (Hint: look in the slides)
@@ -8,7 +7,7 @@
 let rec freevars ast =
   match ast with
   EVar(x) ->  [x]
-	| EVal(VFun(x, e)) ->  List.filter (fun y ->  y <> x) (freevars e) (* x is bound var so remove it *)
+	| EVal(VFun(x, e)) ->  List.filter (fun y ->  x <> y) (freevars e) (* x is bound var so remove it *)
 	| EApp(e1, e2) -> List.append ( freevars e1) ( freevars e2)
 
 
