@@ -1,0 +1,6 @@
+(fun f:Unit -> Unit.
+  fun a:Bool.
+    fun a:Unit.
+      true)
+(fun z:Unit.z)
+true ()
