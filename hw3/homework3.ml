@@ -7,6 +7,17 @@ open Ast
  *)
 exception Type_error
 (* val lookup: Ast.env -> Ast.var -> Ast.typ *)
+let lookup env var = 
+	let mylookup = function
+  | (v , _) ->
+      if var=v then
+        true
+      else
+        false    
+	in try match List.find mylookup env with (v ,t)-> t  (* if v == var return its type t *)
+		with Not_found -> print_string "no such binding in the environment\n";
+				print_string var; raise (Type_error)
+  
 
 (*
  * B. Write a function that takes an environment and an AST and
